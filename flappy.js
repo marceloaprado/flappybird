@@ -10,7 +10,7 @@ fpsInterval,
 startTime, 
 now, 
 then, 
-elapsed;
+elapsed,
 
 estados = {
 	jogar: 0,
@@ -65,6 +65,7 @@ gameOver = {
 },
 
 contador = 0,
+
 personagem = {
 	x: 50,
 	y: 300 - spritePersonagem.altura,
@@ -77,16 +78,23 @@ personagem = {
 	pulando : 0,
 	caindo: 0,
 	parado: 0,
+	rotacao: 0,
 
 	atualiza: function(){
-		if(this.pulando && estadoAtual == estados.jogando)
+		if(this.pulando && estadoAtual == estados.jogando) {
 			posicao = 2;
+			this.rotacao = Math.PI / 180 * -this.forcaDoPulo;
+		}
 
-		if(this.caindo && estadoAtual == estados.jogando)
+		if(this.caindo && estadoAtual == estados.jogando) {
 			posicao = 0;
+			this.rotacao = Math.PI / 180 * this.velocidade;
+		}		
 
-		if(this.parado && estadoAtual == estados.jogando)
+		if(this.parado && estadoAtual == estados.jogando) {
 			posicao = 1;
+			this.rotacao = 0;
+		}
 
 		if(estadoAtual != estados.jogar && this.y + this.altura < chao.y){
 			this.velocidade += this.gravidade;
@@ -104,9 +112,8 @@ personagem = {
 			
 		if(estadoAtual == estados.jogar){
 			contador++;
-			/*Aqui eh realizado a troca da imagem da sprite do personagem.
-			Essa verificacao eh feita para dar um delay durante a troca de 
-			imagens de forma que fique mais facil de ser visualizada*/
+
+			/* Delay para troca da imagem da sprite do personagem */
 			if(contador % 10 == 0){
 				posicao++;
 				if(posicao == 3)
@@ -127,6 +134,7 @@ personagem = {
 	reset: function(){
 		this.y = 300 - spritePersonagem.altura;
 		this.velocidade = 0;
+		this.rotacao = 0;
 
 		if(this.score > record){
 			localStorage.setItem("record", this.score);
@@ -135,8 +143,12 @@ personagem = {
 		this.score = 0;
 	},
 
-	desenha: function(){
-		spritePersonagem.desenha(this.x, this.y);
+	desenha: function() {
+		ctx.save();
+		ctx.translate(this.x + this.largura / 2, this.y + this.altura / 2);
+		ctx.rotate(this.rotacao);
+		spritePersonagem.desenha(-this.largura / 2, -this.altura / 2);
+		ctx.restore();
 	}
 },
 
@@ -163,6 +175,7 @@ obstaculos = {
 			var obs = this._obs[i];
 			obs.x -= velocidade;
 
+			/* Colisão do personagem com os obstáculos e com o chão */
 			if(personagem.x < obs.x + obs.largura && personagem.x + personagem.largura >= obs.x && 
 			  (personagem.y + personagem.altura >= chao.y - obs.altura - 28 || personagem.y <= chao.y - obs.altura - 200))			
 				estadoAtual = estados.perdeu;
@@ -193,6 +206,7 @@ obstaculos = {
 };
 
 window.onload = function(){
+	/* FPS que o jogo irá rodar */
 	main(60);
 }
 
@@ -278,6 +292,7 @@ function desenha (){
 
 	chao.desenha();	
 	personagem.desenha();	
+
 	if(estadoAtual == estados.perdeu){
 		gameOver.desenha();
 
@@ -287,7 +302,7 @@ function desenha (){
 }
 
 function desenhaObstaculos(x, y, altura, indicador){
-	//Indicador N = Normal, e I = Invertido
+	//Indicador N = Normal, e I = Invertido (quando o cano vem por cima / por baixo)
 	if(indicador == "N"){	
 		parteInferiorOb(x, y, altura);	
 		parteSuperiorOb(x, y);
@@ -382,7 +397,6 @@ function parteSuperiorOb(x, y){
 	ctx.rect(x - 12, y, 86, 3);	
 	ctx.fill();
 	ctx.closePath();
-	//Fim parte de cima do Cano
 }
 
 function parteInferiorOb(x, y, altura){
@@ -458,5 +472,4 @@ function parteInferiorOb(x, y, altura){
 	ctx.rect(x, y + altura, 63, 3);	
 	ctx.fill();
 	ctx.closePath();
-	//Fim parte de baixo do Cano
 }
